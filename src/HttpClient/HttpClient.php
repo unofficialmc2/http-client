@@ -222,7 +222,8 @@ class HttpClient implements HttpClientInterface
             $code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
             $error = curl_error($curl);
             $status = curl_errno($curl);
-            $result[$clef] = $this->makeResponse($status, $response, $code, $error);
+            $headerSize = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+            $result[$clef] = $this->makeResponse($status, $response, $code, $error, $headerSize);
             curl_multi_remove_handle($this->curlMulHand, $curl);
         }
         $this->curlResult = $result;
@@ -235,9 +236,15 @@ class HttpClient implements HttpClientInterface
      * @param bool|string|null $response
      * @param mixed $code
      * @param string $error
-     * @return \HttpClient\HttpResponse
+     * @param int $headerSize
+     * @return HttpResponse
      */
-    private function makeResponse(int $status, bool|string|null $response, mixed $code, string $error): HttpResponse
+    private function makeResponse(
+        int $status,
+        bool|string|null $response,
+        mixed $code,
+        string $error,
+        int $headerSize): HttpResponse
     {
         if ($status !== CURLE_OK) {
             switch ($status) {
@@ -253,9 +260,10 @@ class HttpClient implements HttpClientInterface
             $this->log('error', "Curl error", ["error" => $error]);
             return new HttpResponse(false, [], $error);
         }
+        $body = substr($response, $headerSize);
         $splitedRep = preg_split("/\r\n\r\n|\n\n/", $response);
         $headers = $this->headerParse($splitedRep[0] ?? '');
-        return new HttpResponse($code, $headers, $splitedRep[1] ?? '');
+        return new HttpResponse($code, $headers, $body);
     }
 
     /**
@@ -323,7 +331,8 @@ class HttpClient implements HttpClientInterface
         $status = curl_errno($curl);
         $code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         $error = curl_error($curl);
-        $response = $this->makeResponse($status, $curlResult, $code, $error);
+        $headerSize = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+        $response = $this->makeResponse($status, $curlResult, $code, $error, $headerSize);
         curl_close($curl);
         return $response;
     }
