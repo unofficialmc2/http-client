@@ -333,7 +333,6 @@ class HttpClient implements HttpClientInterface
         $error = curl_error($curl);
         $headerSize = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
         $response = $this->makeResponse($status, $curlResult, $code, $error, $headerSize);
-        curl_close($curl);
         return $response;
     }
 
