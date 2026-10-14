@@ -123,7 +123,7 @@ class HttpClient implements HttpClientInterface
         curl_setopt($curl, CURLOPT_TIMEOUT, $this->timeout);
         if (isset($curlparam['ssl_verify']) && $curlparam['ssl_verify'] === false) {
             curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         }
 
         return $curl;

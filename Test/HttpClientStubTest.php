@@ -30,7 +30,6 @@ class HttpClientStubTest extends TestCase
             JSON_THROW_ON_ERROR
         ));
         $clef = $stub->addParamRequest("", [], HttpMethod::GET);
-        self::assertIsString($clef);
         self::assertEquals(8, strlen($clef));
     }
 

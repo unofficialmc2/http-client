@@ -26,9 +26,35 @@ class HttpClientTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         $server = __DIR__ . "/server";
-        self::$process = new Process(["php", "-S", "localhost:9874", "-t", $server]);
+        self::$process = new Process([PHP_BINARY, "-S", "localhost:9874", "-t", $server]);
         self::$process->start();
-        usleep(100000);
+        self::waitForServer("localhost", 9874);
+    }
+
+    /**
+     * attend que le serveur de test accepte les connexions
+     * @param string $host
+     * @param int $port
+     * @param float $timeout délai maximum en secondes
+     * @return void
+     */
+    private static function waitForServer(string $host, int $port, float $timeout = 5.0): void
+    {
+        $limite = microtime(true) + $timeout;
+        while (microtime(true) < $limite) {
+            if (!self::$process->isRunning()) {
+                throw new RuntimeException(
+                    "Le serveur de test s'est arrêté : " . self::$process->getErrorOutput()
+                );
+            }
+            $socket = @fsockopen($host, $port, $errno, $errstr, 0.1);
+            if ($socket !== false) {
+                fclose($socket);
+                return;
+            }
+            usleep(50000);
+        }
+        throw new RuntimeException("Le serveur de test n'a pas démarré sur $host:$port");
     }
 
     /**
@@ -49,8 +75,6 @@ class HttpClientTest extends TestCase
         $rep2 = $action->getResult($clef2);
         self::assertTrue($rep1->isSuccess());
         self::assertTrue($rep2->isSuccess());
-        self::assertIsArray($rep1->getHeaders());
-        self::assertIsArray($rep2->getHeaders());
         self::assertIsArray($rep1->getData());
         self::assertIsArray($rep2->getData());
     }
@@ -104,8 +128,6 @@ class HttpClientTest extends TestCase
 
         self::assertTrue($rep1->isSuccess());
         self::assertTrue($rep2->isSuccess());
-        self::assertIsArray($rep1->getHeaders());
-        self::assertIsArray($rep2->getHeaders());
         self::assertIsArray($rep1->getData());
         self::assertIsArray($rep2->getData());
 
@@ -115,7 +137,6 @@ class HttpClientTest extends TestCase
         $rep3 = $action->getResult($clef3);
 
         self::assertTrue($rep3->isSuccess());
-        self::assertIsArray($rep3->getHeaders());
         self::assertIsArray($rep3->getData());
 
         // S'assurer que l'exception RuntimeException avec le bon message est levée
